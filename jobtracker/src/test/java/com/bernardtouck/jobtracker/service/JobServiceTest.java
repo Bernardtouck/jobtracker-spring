@@ -116,4 +116,47 @@ class JobServiceTest {
 
         verify(jobRepository, never()).delete(any(Job.class));
     }
+
+    // ─── TEST 5 : Modifier un job ─────────────────────────
+    @Test
+    void updateJob_ShouldReturnUpdatedJob_WhenJobExists() {
+        // Arrange
+        JobRequest updateRequest = new JobRequest();
+        updateRequest.setCompany("Google");
+        updateRequest.setPosition("Senior Engineer");
+        updateRequest.setStatus(JobStatus.INTERVIEW);
+
+        Job updatedJob = new Job();
+        updatedJob.setId(1L);
+        updatedJob.setCompany("Google");
+        updatedJob.setPosition("Senior Engineer");
+        updatedJob.setStatus(JobStatus.INTERVIEW);
+
+        when(userRepository.findByEmail("test@test.com")).thenReturn(Optional.of(mockUser));
+        when(jobRepository.findByIdAndUserId(1L, 1L)).thenReturn(Optional.of(mockJob));
+        when(jobRepository.save(any(Job.class))).thenReturn(updatedJob);
+
+        // Act
+        Job result = jobService.updateJob("test@test.com", 1L, updateRequest);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals("Google", result.getCompany());
+        assertEquals(JobStatus.INTERVIEW, result.getStatus());
+        verify(jobRepository, times(1)).save(any(Job.class));
+    }
+
+    // ─── TEST 6 : Modifier un job inexistant ──────────────
+    @Test
+    void updateJob_ShouldThrowException_WhenJobNotFound() {
+        // Arrange
+        when(userRepository.findByEmail("test@test.com")).thenReturn(Optional.of(mockUser));
+        when(jobRepository.findByIdAndUserId(99L, 1L)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        assertThrows(RuntimeException.class,
+                () -> jobService.updateJob("test@test.com", 99L, jobRequest));
+
+        verify(jobRepository, never()).save(any(Job.class));
+    }
 }

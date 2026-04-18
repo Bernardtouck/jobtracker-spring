@@ -6,6 +6,7 @@ import com.bernardtouck.jobtracker.dto.RegisterRequest;
 import com.bernardtouck.jobtracker.entity.User;
 import com.bernardtouck.jobtracker.repository.UserRepository;
 import com.bernardtouck.jobtracker.security.JwtUtil;
+import com.bernardtouck.jobtracker.dto.UserDto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -126,5 +127,42 @@ class UserServiceTest {
         // Assert
         assertNotNull(result);
         assertEquals("test@test.com", result.getEmail());
+    }
+    // ─── TEST 5 : Modifier le profil ──────────────────────
+    @Test
+    void updateProfile_ShouldReturnUpdatedUser_WhenUserExists() {
+        // Arrange
+        UserDto updateDto = new UserDto(1L, "test@test.com", "Bernard", null);
+
+        User updatedUser = new User();
+        updatedUser.setId(1L);
+        updatedUser.setEmail("test@test.com");
+        updatedUser.setUsername("Bernard");
+
+        when(userRepository.findByEmail("test@test.com")).thenReturn(Optional.of(mockUser));
+        when(userRepository.save(any(User.class))).thenReturn(updatedUser);
+
+        // Act
+        UserDto result = userService.updateProfile("test@test.com", updateDto);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals("Bernard", result.getUsername());
+        verify(userRepository, times(1)).save(any(User.class));
+    }
+
+    // ─── TEST 6 : Modifier profil inexistant ──────────────
+    @Test
+    void updateProfile_ShouldThrowException_WhenUserNotFound() {
+        // Arrange
+        UserDto updateDto = new UserDto(1L, "unknown@test.com", "Bernard", null);
+
+        when(userRepository.findByEmail("unknown@test.com")).thenReturn(Optional.empty());
+
+        // Act & Assert
+        assertThrows(RuntimeException.class,
+                () -> userService.updateProfile("unknown@test.com", updateDto));
+
+        verify(userRepository, never()).save(any(User.class));
     }
 }
